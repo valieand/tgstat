@@ -70,7 +70,7 @@ class LinkShortifier extends BaseObject
         if (!$freeIds) {
             throw new Exception("No more free ids.");
         }
-        if (count($freeIds) === 1 && $freeIds[0] == IdHashCoder::MAX_IDS) {
+        if (count($freeIds) === 1 && $freeIds[0] == IdHashCoder::MAX_IDS + 1) {
             throw new Exception("No more free ids.");
         }
 

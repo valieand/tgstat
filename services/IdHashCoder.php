@@ -7,7 +7,7 @@ namespace app\services;
 use yii\base\BaseObject;
 
 /**
- * IdHashCoder is the service that shortifies links.
+ * IdHashCoder is the service that encodes/decodes id.
  */
 class IdHashCoder extends BaseObject
 {
