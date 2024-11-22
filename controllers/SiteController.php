@@ -2,42 +2,18 @@
 
 namespace app\controllers;
 
+use Throwable;
 use Yii;
-use yii\filters\AccessControl;
+use app\models\HashForm;
+use app\models\LinkForm;
+use app\services\LinkRestorer;
+use app\services\LinkShortifier;
+use yii\web\BadRequestHttpException;
 use yii\web\Controller;
-use yii\web\Response;
-use yii\filters\VerbFilter;
-use app\models\LoginForm;
-use app\models\ContactForm;
+use yii\web\NotFoundHttpException;
 
 class SiteController extends Controller
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function behaviors()
-    {
-        return [
-            'access' => [
-                'class' => AccessControl::class,
-                'only' => ['logout'],
-                'rules' => [
-                    [
-                        'actions' => ['logout'],
-                        'allow' => true,
-                        'roles' => ['@'],
-                    ],
-                ],
-            ],
-            'verbs' => [
-                'class' => VerbFilter::class,
-                'actions' => [
-                    'logout' => ['post'],
-                ],
-            ],
-        ];
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -47,82 +23,47 @@ class SiteController extends Controller
             'error' => [
                 'class' => 'yii\web\ErrorAction',
             ],
-            'captcha' => [
-                'class' => 'yii\captcha\CaptchaAction',
-                'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null,
-            ],
         ];
     }
 
     /**
-     * Displays homepage.
+     * Сократитель ссылок.
      *
-     * @return string
+     * @return Response|string
      */
     public function actionIndex()
     {
-        return $this->render('index');
-    }
+        $form = new LinkForm();
 
-    /**
-     * Login action.
-     *
-     * @return Response|string
-     */
-    public function actionLogin()
-    {
-        if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
-        }
+        $link = $form->load(Yii::$app->request->post()) && $form->validate()
+            ? Yii::createObject(LinkShortifier::class, [$form->link])->generateShortLink()
+            : null;
 
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        }
-
-        $model->password = '';
-        return $this->render('login', [
-            'model' => $model,
+        return $this->render('index', [
+            'model' => $form,
+            'shortLink' => $link,
         ]);
     }
 
     /**
-     * Logout action.
-     *
-     * @return Response
-     */
-    public function actionLogout()
-    {
-        Yii::$app->user->logout();
-
-        return $this->goHome();
-    }
-
-    /**
-     * Displays contact page.
+     * Восстановитель ссылок.
      *
      * @return Response|string
      */
-    public function actionContact()
+    public function actionRestorer($hash)
     {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
-            Yii::$app->session->setFlash('contactFormSubmitted');
+        $form = new HashForm(['hash' => $hash]);
 
-            return $this->refresh();
+        if (!$form->validate()) {
+            throw new BadRequestHttpException("Invalid link.");
         }
-        return $this->render('contact', [
-            'model' => $model,
-        ]);
-    }
 
-    /**
-     * Displays about page.
-     *
-     * @return string
-     */
-    public function actionAbout()
-    {
-        return $this->render('about');
+        try {
+            $link = Yii::createObject(LinkRestorer::class, [$form->hash])->restoreLink();
+        } catch (Throwable $t) {
+            throw new NotFoundHttpException("Original link not found.");
+        }
+
+        $this->redirect($link);
     }
 }

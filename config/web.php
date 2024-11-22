@@ -1,18 +1,24 @@
 <?php
 
+use yii\web\UrlNormalizer;
+
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
 
 $config = [
     'id' => 'basic',
+    'name' => 'Сократитель ссылок',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
     ],
+    'homeUrl' => '/',
+    'defaultRoute' => 'site/index',
     'components' => [
         'request' => [
+            'baseUrl' => '',
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'Zdmtd4hxJ5rGSrLAYvpxU88UB8ZFKt_3',
         ],
@@ -42,14 +48,20 @@ $config = [
             ],
         ],
         'db' => $db,
-        /*
         'urlManager' => [
+            'baseUrl' => '',
             'enablePrettyUrl' => true,
             'showScriptName' => false,
+            'normalizer' => [
+                'class' => UrlNormalizer::class,
+                'normalizeTrailingSlash' => true,
+                'collapseSlashes' => true,
+            ],
             'rules' => [
+                '' => 'site/index',
+                '<hash:[A-Za-z0-9_-]{5}>' => 'site/restorer',
             ],
         ],
-        */
     ],
     'params' => $params,
 ];
@@ -60,14 +72,14 @@ if (YII_ENV_DEV) {
     $config['modules']['debug'] = [
         'class' => 'yii\debug\Module',
         // uncomment the following to add your IP if you are not connecting from localhost.
-        //'allowedIPs' => ['127.0.0.1', '::1'],
+        'allowedIPs' => ['*'],
     ];
 
     $config['bootstrap'][] = 'gii';
     $config['modules']['gii'] = [
         'class' => 'yii\gii\Module',
         // uncomment the following to add your IP if you are not connecting from localhost.
-        //'allowedIPs' => ['127.0.0.1', '::1'],
+        'allowedIPs' => ['*'],
     ];
 }
 
